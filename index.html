@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#101115">
+    <title>Cutline — Video editor</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="#" aria-label="Cutline home"><span class="brand-mark">c</span>cutline</a>
+      <div class="project-name"><span class="status-dot"></span><span id="projectTitle">Untitled project</span></div>
+      <div class="top-actions">
+        <button class="button button-quiet" id="newProjectButton" type="button">New project</button>
+        <label class="sr-only" for="exportFormat">Export format</label>
+        <select class="export-format" id="exportFormat" aria-label="Export format">
+          <option value="mp4">MP4</option>
+          <option value="webm">WebM</option>
+        </select>
+        <button class="button button-primary" id="exportButton" type="button" disabled><span aria-hidden="true">↑</span> Export video</button>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <aside class="sidebar">
+        <div class="sidebar-heading"><div><span class="eyebrow">YOUR PROJECT</span><h1>Media</h1></div><span class="media-count" id="mediaCount">0</span></div>
+        <label class="dropzone" id="dropzone" for="videoInput">
+          <span class="upload-icon" aria-hidden="true">↑</span>
+          <strong>Import video</strong>
+          <span>Drag a file here or <u>browse</u></span>
+          <small>MP4, WebM, MOV · up to 2 GB</small>
+        </label>
+        <input id="videoInput" type="file" accept="video/*" hidden>
+        <div class="section-label"><span>VIDEO FILES</span><button class="icon-button" id="addMediaButton" type="button" aria-label="Import video">＋</button></div>
+        <div id="mediaList" class="media-list"><div class="empty-media">Your imported videos will appear here.</div></div>
+        <div class="sidebar-footer"><span class="footer-badge">✦</span><div><strong>Made for the moment</strong><span>Your files stay on this device.</span></div></div>
+      </aside>
+
+      <section class="editor">
+        <div class="preview-toolbar">
+          <div class="view-label"><span class="live-dot"></span>PREVIEW <span class="toolbar-divider"></span><span id="previewResolution">16:9</span></div>
+          <div class="preview-tools">
+            <label class="select-wrap"><span class="sr-only">Canvas aspect ratio</span><select id="aspectRatio"><option value="16:9">16:9</option><option value="9:16">9:16</option><option value="1:1">1:1</option></select></label>
+            <button class="icon-button" id="fullscreenButton" type="button" title="Fullscreen preview" aria-label="Fullscreen preview">⛶</button>
+          </div>
+        </div>
+        <div class="stage-wrap">
+          <div class="stage" id="stage">
+            <video id="previewVideo" playsinline preload="metadata"></video>
+            <canvas id="previewCanvas" aria-label="Video preview"></canvas>
+            <div class="stage-empty" id="stageEmpty">
+              <div class="empty-icon">▶</div>
+              <strong>Your story starts here</strong>
+              <span>Import a video, then add a clip to the timeline.</span>
+              <button class="button button-primary button-small" id="emptyImportButton" type="button">Import a video</button>
+            </div>
+          </div>
+        </div>
+        <div class="playback-bar">
+          <div class="playback-time"><span id="currentTime">00:00</span><span class="time-slash">/</span><span id="totalTime">00:00</span></div>
+          <div class="playback-controls">
+            <button class="icon-button" id="previousButton" type="button" title="Previous clip" aria-label="Previous clip">|‹</button>
+            <button class="play-button" id="playButton" type="button" title="Play" aria-label="Play" disabled>▶</button>
+            <button class="icon-button" id="nextButton" type="button" title="Next clip" aria-label="Next clip">›|</button>
+          </div>
+          <div class="playback-spacer"></div>
+          <span class="preview-note">Preview</span>
+        </div>
+        <section class="timeline-panel" aria-label="Timeline editor">
+          <div class="timeline-header">
+            <div class="timeline-title"><h2>Timeline</h2><span class="clip-count" id="clipCount">0 clips</span></div>
+            <div class="timeline-actions"><button class="button button-quiet button-small" id="addClipButton" type="button" disabled>＋ Add to timeline</button><button class="icon-button" id="zoomOut" type="button" aria-label="Zoom out">−</button><span id="zoomLabel">100%</span><button class="icon-button" id="zoomIn" type="button" aria-label="Zoom in">＋</button></div>
+          </div>
+          <div class="timeline-scroll" id="timelineScroll">
+            <div class="ruler" id="ruler"><div class="ruler-track" id="rulerTrack"></div></div>
+            <div class="track-row"><div class="track-label"><span class="track-symbol video-symbol">▰</span><span>Video</span></div><div class="track-content" id="videoTrack"><div class="track-empty">Add a clip to begin editing</div><div class="playhead" id="playhead"><span></span></div></div></div>
+            <div class="track-row audio-row"><div class="track-label"><span class="track-symbol audio-symbol">♫</span><span>Voiceover</span></div><div class="track-content" id="audioTrack"><div class="audio-empty" id="audioEmpty">Your voiceover will appear here</div><div class="voice-clip" id="voiceClip" hidden><span>♫</span><span id="voiceLabel">Voiceover</span><button type="button" id="removeVoiceButton" aria-label="Remove voiceover">×</button></div></div></div>
+          </div>
+          <div class="timeline-foot"><span>Tip: Select a clip to trim, reorder, or remove it.</span><button type="button" class="text-button" id="clearTimelineButton" disabled>Clear timeline</button></div>
+        </section>
+      </section>
+
+      <aside class="inspector">
+        <div class="inspector-tabs"><button class="inspector-tab active" type="button">Edit</button><span class="inspector-tab-muted">Clip settings</span></div>
+        <div class="inspector-content">
+          <section class="inspector-section">
+            <div class="inspector-title"><div><span class="eyebrow">SELECTED CLIP</span><h2 id="selectedClipTitle">Nothing selected</h2></div><span class="clip-mark">▰</span></div>
+            <div id="noSelection" class="inspector-empty">Choose a video from your library to set its trim points, then add it to your timeline.</div>
+            <div id="clipSettings" hidden>
+              <div class="trim-heading"><span>TRIM CLIP</span><span id="trimDuration">00:00</span></div>
+              <div class="trim-fields">
+                <label>Start <span class="input-with-unit"><input id="trimStart" type="number" min="0" step="0.1" value="0"><span>sec</span></span></label>
+                <label>End <span class="input-with-unit"><input id="trimEnd" type="number" min="0" step="0.1" value="0"><span>sec</span></span></label>
+              </div>
+              <div class="trim-range"><input id="trimRangeStart" type="range" min="0" max="100" step="0.1" value="0" aria-label="Trim start"><input id="trimRangeEnd" type="range" min="0" max="100" step="0.1" value="100" aria-label="Trim end"></div>
+              <label class="field-label" for="clipSpeed">Playback speed</label>
+              <select class="wide-select" id="clipSpeed"><option value="0.5">0.5× Slow</option><option value="0.75">0.75×</option><option value="1" selected>1× Normal</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="2">2× Fast</option></select>
+              <div class="field-label volume-label"><span>Clip volume</span><span id="volumeValue">100%</span></div>
+              <input class="volume-slider" id="clipVolume" type="range" min="0" max="100" value="100" aria-label="Clip volume">
+              <div class="clip-edit-actions" id="clipEditActions" hidden>
+                <button class="button button-outline" id="moveClipLeft" type="button" aria-label="Move clip earlier">← Earlier</button>
+                <button class="button button-outline" id="moveClipRight" type="button" aria-label="Move clip later">Later →</button>
+                <button class="button button-outline remove-clip" id="removeClipButton" type="button">Remove clip</button>
+              </div>
+              <button class="button button-primary add-full" id="inspectorAddButton" type="button" disabled>＋ Add clip to timeline</button>
+            </div>
+          </section>
+          <section class="inspector-section appearance-section">
+            <div class="section-heading"><div><span class="eyebrow">LOOK & FEEL</span><h2>Adjustments</h2></div><span class="adjust-icon">✳</span></div>
+            <label class="field-label" for="filterSelect">Color filter</label>
+            <select class="wide-select" id="filterSelect"><option value="none">Original</option><option value="warm">Warm</option><option value="mono">Black & white</option><option value="cinema">Cinematic</option><option value="bright">Brighten</option></select>
+            <label class="field-label title-label" for="titleInput">Title overlay</label>
+            <input class="text-input" id="titleInput" type="text" maxlength="60" placeholder="Add a title to your video">
+          </section>
+          <section class="inspector-section voice-section">
+            <div class="section-heading"><div><span class="eyebrow">SOUND</span><h2>Voiceover</h2></div><span class="voice-icon">♫</span></div>
+            <p class="section-copy">Add narration or a music track to your video.</p>
+            <div class="voice-actions">
+              <label class="button button-outline voice-upload" for="audioInput">↑ Upload audio</label>
+              <button class="button button-outline record-button" id="recordButton" type="button"><span class="record-dot"></span><span id="recordButtonText">Record voice</span></button>
+            </div>
+            <input id="audioInput" type="file" accept="audio/*" hidden>
+            <div class="voice-status" id="voiceStatus" aria-live="polite">No voiceover added yet</div>
+          </section>
+          <div class="local-note"><span>◈</span> Everything is processed locally in your browser.</div>
+        </div>
+      </aside>
+    </main>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <div class="export-overlay" id="exportOverlay" hidden>
+      <div class="export-card"><div class="export-spinner"></div><span class="eyebrow">RENDERING YOUR VIDEO</span><h2 id="exportStatus">Preparing your project…</h2><div class="progress-track"><div id="exportProgress"></div></div><span class="export-note">Keep this tab open while your video exports.</span><button class="button button-quiet" id="cancelExportButton" type="button">Cancel export</button></div>
+    </div>
+    <script src="app.js"></script>
+  </body>
+</html>
