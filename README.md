@@ -12,29 +12,52 @@ py -m http.server 8000
 
 Then open `http://localhost:8000`.
 
-## Deploy with Docker on your domain
+## Deploy with Docker behind an existing website
 
-Before starting the containers:
+The app container binds only to `127.0.0.1:8080`, so it does not take over public HTTP/HTTPS ports. If your main website already listens on ports 80/443, configure its existing reverse proxy to forward `cutline.shibaprasad.online` to this local port.
 
-1. In your DNS provider, create an **A record** with name `cutline` and value `34.134.79.147` (the public IP of the Docker host shown in your DNS setup). Do not include `http://` or a port. Remove any conflicting record for the `cutline` subdomain.
-2. Allow inbound TCP ports **80 and 443** in the server firewall/cloud firewall. Allow UDP port **443** if you want HTTP/3; it is optional.
-3. Make sure these ports are not already in use by another web server or reverse proxy on the host.
-
-Then, from the project folder on the Docker host, start the containers:
+Start the app from the project folder on the Docker host:
 
 ```powershell
 docker compose up --build -d
 ```
 
-Open `https://cutline.shibaprasad.online`. Caddy requests and renews the TLS certificate automatically, so the domain must already resolve to the server and ports 80/443 must be reachable from the internet. The site is also available over HTTP and redirects to HTTPS.
+For an existing **Caddy** server, add the site block from `Caddyfile` to its Caddy configuration and reload Caddy. For an existing **Nginx** server, add a virtual host like:
 
-To stop the containers:
+```nginx
+server {
+    listen 80;
+    server_name cutline.shibaprasad.online;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name cutline.shibaprasad.online;
+
+    # Use the TLS certificate and key for this hostname.
+    ssl_certificate /path/to/fullchain.pem;
+    ssl_certificate_key /path/to/privkey.pem;
+
+    location / {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+Ensure the `cutline` DNS record points to the host and that the existing proxy has a valid TLS certificate for `cutline.shibaprasad.online`. Then open `https://cutline.shibaprasad.online`.
+
+To stop the app container:
 
 ```powershell
 docker compose down
 ```
 
-The Caddy data volume stores TLS certificates across container restarts. Microphone recording requires HTTPS outside localhost. Video editing and rendering still run in each visitor's browser; the containers only serve the static app and terminate HTTPS.
+Microphone recording requires HTTPS outside localhost. Video editing and rendering still run in each visitor's browser; Docker only serves the static app.
 
 ## Edit and export
 
