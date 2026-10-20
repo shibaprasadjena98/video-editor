@@ -4,13 +4,18 @@ Cutline is a browser-based video editor. Imported media stays in the browser; no
 
 ## Run
 
-Open `index.html` directly for editing, or serve this folder locally to enable microphone recording:
+Run the development server to test the app locally:
 
 ```powershell
-py -m http.server 8000
+npm ci
+npm run dev
 ```
 
-Then open `http://localhost:8000`.
+Open the local URL printed by Vite (typically `http://localhost:5173`). The build output can also be served with any static web server:
+
+```powershell
+npm run build
+```
 
 ## Deploy with Docker behind an existing website
 
@@ -65,4 +70,4 @@ Microphone recording requires HTTPS outside localhost. Video editing and renderi
 - Select timeline clips to change trim points, playback speed, or clip volume. Use the earlier/later and remove controls to arrange the sequence.
 - Choose an output aspect ratio, apply a color filter, and add a title overlay.
 - Upload an audio track or record a voiceover. Recording requires microphone permission and HTTPS or localhost.
-- Choose MP4 or WebM in the export-format menu. MP4 uses the browser's built-in MP4 encoder and is available only when that browser supports it; WebM is the broader-compatibility option. Export renders in real time, so keep the tab open until rendering finishes. Some browser-generated files omit duration metadata; Cutline attempts to recover their duration by seeking to the end when they are imported again. Export availability depends on browser support for `MediaRecorder` and canvas capture; a current Chrome or Edge browser is recommended.
+- Choose MP4 or WebM in the export-format menu. Export renders in real time in your browser, then finalizes the recorded file locally so media players can read its duration and seek accurately. Finalization uses Mediabunny and may take additional time for long videos. Export availability depends on browser support for `MediaRecorder`, canvas capture, and the selected output format; a current Chrome or Edge browser is recommended.

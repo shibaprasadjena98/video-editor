@@ -1,3 +1,15 @@
+import {
+  BlobSource,
+  BufferTarget,
+  Conversion,
+  Input,
+  Mp4InputFormat,
+  Mp4OutputFormat,
+  Output,
+  WebMInputFormat,
+  WebMOutputFormat
+} from "mediabunny";
+
 (() => {
   const $ = (selector) => document.querySelector(selector);
   const els = {
@@ -658,7 +670,41 @@
       const result = await stopped;
       if (state.cancelExport) { toast("Export cancelled."); return; }
       if (!result.length) throw new Error("The export produced an empty video.");
-      const blob = new Blob(result, { type: mime });
+      els.exportStatus.textContent = "Finalizing video for reliable playback…";
+      const recordedBlob = new Blob(result, { type: mime });
+      const input = new Input({
+        source: new BlobSource(recordedBlob),
+        formats: [new Mp4InputFormat(), new WebMInputFormat()]
+      });
+      const output = new Output({
+        format: format === "mp4" ? new Mp4OutputFormat() : new WebMOutputFormat(),
+        target: new BufferTarget()
+      });
+      const conversion = await Conversion.init({ input, output });
+      if (!conversion.isValid) {
+        const reasons = conversion.discardedTracks.map(track => track.reason).filter(Boolean);
+        throw new Error(reasons.length
+          ? `Could not finalize all media tracks: ${[...new Set(reasons)].join("; ")}`
+          : "The recorded video could not be finalized for playback.");
+      }
+      conversion.onProgress = progress => {
+        els.exportProgress.style.width = `${Math.min(99, Math.round(progress * 100))}%`;
+      };
+      await conversion.execute();
+      if (state.cancelExport) { toast("Export cancelled."); return; }
+      const finalizedBuffer = output.target.buffer;
+      if (!finalizedBuffer || !finalizedBuffer.byteLength) {
+        throw new Error("Video finalization produced an empty file.");
+      }
+      const blob = new Blob([finalizedBuffer], { type: format === "mp4" ? "video/mp4" : "video/webm" });
+      const finalizedInput = new Input({
+        source: new BlobSource(blob),
+        formats: [new Mp4InputFormat(), new WebMInputFormat()]
+      });
+      const finalizedDuration = await finalizedInput.computeDuration();
+      if (!Number.isFinite(finalizedDuration) || finalizedDuration <= 0) {
+        throw new Error("The finalized video is missing a valid duration.");
+      }
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
       const safeName = (els.projectTitle.textContent || "video").replace(/[<>:"/\\|?*\x00-\x1F]/g, "-").trim() || "video";
