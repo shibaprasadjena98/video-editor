@@ -12,21 +12,29 @@ py -m http.server 8000
 
 Then open `http://localhost:8000`.
 
-## Deploy with Docker
+## Deploy with Docker on your domain
 
-Build and start the static web server:
+Before starting the containers:
+
+1. In your DNS provider, create an **A record** with name `cutline` and value `34.134.79.147` (the public IP of the Docker host shown in your DNS setup). Do not include `http://` or a port. Remove any conflicting record for the `cutline` subdomain.
+2. Allow inbound TCP ports **80 and 443** in the server firewall/cloud firewall. Allow UDP port **443** if you want HTTP/3; it is optional.
+3. Make sure these ports are not already in use by another web server or reverse proxy on the host.
+
+Then, from the project folder on the Docker host, start the containers:
 
 ```powershell
 docker compose up --build -d
 ```
 
-Open `http://localhost:8080`. To stop it:
+Open `https://cutline.shibaprasad.online`. Caddy requests and renews the TLS certificate automatically, so the domain must already resolve to the server and ports 80/443 must be reachable from the internet. The site is also available over HTTP and redirects to HTTPS.
+
+To stop the containers:
 
 ```powershell
 docker compose down
 ```
 
-For public deployment, point a domain to the Docker host and put an HTTPS-enabled reverse proxy (such as Caddy, Traefik, or Nginx Proxy Manager) in front of this container. Microphone recording requires HTTPS outside localhost. Video editing and rendering still run in each visitor's browser; the container only serves the static app.
+The Caddy data volume stores TLS certificates across container restarts. Microphone recording requires HTTPS outside localhost. Video editing and rendering still run in each visitor's browser; the containers only serve the static app and terminate HTTPS.
 
 ## Edit and export
 

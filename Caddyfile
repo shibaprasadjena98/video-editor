@@ -1,0 +1,4 @@
+cutline.shibaprasad.online {
+    encode zstd gzip
+    reverse_proxy cutline:80
+}
